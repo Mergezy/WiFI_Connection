@@ -9,8 +9,10 @@ import android.os.Environment;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.util.Log;
+import android.webkit.MimeTypeMap;
 
 public class FileUtils {
+
     public static String getRealPathFromURI(Context context, Uri uri) {
         String filePath = null;
 
@@ -50,9 +52,7 @@ public class FileUtils {
                 }
 
                 final String selection = "_id=?";
-                final String[] selectionArgs = new String[]{
-                        split[1]
-                };
+                final String[] selectionArgs = new String[]{ split[1] };
 
                 filePath = getDataColumn(context, contentUri, selection, selectionArgs);
             }
@@ -69,16 +69,31 @@ public class FileUtils {
         return filePath;
     }
 
+    public static String getFileExtension(Context context, Uri uri) {
+        String extension = null;
+
+        // MediaStore (and general)
+        if ("content".equalsIgnoreCase(uri.getScheme())) {
+            final String type = context.getContentResolver().getType(uri);
+            if (type != null) {
+                extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(type);
+            }
+        }
+        // File
+        else if ("file".equalsIgnoreCase(uri.getScheme())) {
+            extension = MimeTypeMap.getFileExtensionFromUrl(uri.toString());
+        }
+
+        return extension;
+    }
+
     public static String getDataColumn(Context context, Uri uri, String selection, String[] selectionArgs) {
         Cursor cursor = null;
         final String column = "_data";
-        final String[] projection = {
-                column
-        };
+        final String[] projection = { column };
 
         try {
-            cursor = context.getContentResolver().query(uri, projection, selection, selectionArgs,
-                    null);
+            cursor = context.getContentResolver().query(uri, projection, selection, selectionArgs, null);
             if (cursor != null && cursor.moveToFirst()) {
                 final int column_index = cursor.getColumnIndexOrThrow(column);
                 return cursor.getString(column_index);
@@ -102,4 +117,3 @@ public class FileUtils {
         return "com.android.providers.media.documents".equals(uri.getAuthority());
     }
 }
-

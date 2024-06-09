@@ -9,7 +9,7 @@
         android:id="@+id/ipView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="IP Address"
+        android:hint="Ваш IP"
         android:textSize="18sp"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="16dp"/>
@@ -27,17 +27,29 @@
         android:id="@+id/clientBtn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Choose File to Send"
-        android:layout_below="@id/hostBtn"
+        android:layout_below="@+id/ipInput"
+        android:layout_centerHorizontal="true"
         android:layout_marginTop="16dp"
-        android:layout_centerHorizontal="true"/>
+        android:text="Choose File to Send" />
 
     <TextView
         android:id="@+id/statusTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Статус отправки: "
+        android:hint="Статус отправки: "
         android:layout_below="@id/clientBtn"
         android:layout_marginTop="16dp"
+        android:layout_centerHorizontal="true"/>
+
+    <EditText
+        android:id="@+id/ipInput"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/hostBtn"
+        android:layout_marginTop="16dp"
+        android:background="@android:color/transparent"
+        android:hint="Введите IP"
+        android:text=""
+        android:inputType="text"
         android:layout_centerHorizontal="true"/>
 </RelativeLayout>
