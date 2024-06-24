@@ -2,9 +2,11 @@ package com.example.wifi_connection;
 
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.provider.OpenableColumns;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
@@ -69,21 +71,17 @@ public class MainActivity extends AppCompatActivity {
         });
 
         Button clientBtn = findViewById(R.id.clientBtn);
-         clientBtn.setOnClickListener(new View.OnClickListener() {
+        clientBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if(ipInputStr == ""){
                     mainToast.showText("ip не может быть пустой");
                     return;
                 }
-                boolean bol = Pattern.matches("^(((0)?|1(\\d?\\d)?|2([0-4]?\\d|5[0-5]))\\.){3}((0)?|1(\\d?\\d)?|2([0-4]?\\d|5[0-5]))$",ipInputStr);
-                if(bol){
                     Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
                     intent.setType("*/*");
                     startActivityForResult(intent, PICK_FILE_REQUEST);
-                }else {
-                    mainToast.showText("ip некорректный");
-                }
+
             }
         });
     }
@@ -95,10 +93,11 @@ public class MainActivity extends AppCompatActivity {
         if (resultCode == RESULT_OK && requestCode == PICK_FILE_REQUEST && data != null) {
             Uri uri = data.getData();
             String selectedFilePath = getFileFromUri(this, uri);
+            String fileName = getFileName(uri);
 
             if (selectedFilePath != null) {
                 updateStatusTextView("Фактический путь к файлу: " + selectedFilePath);
-                sendFile(selectedFilePath);
+                sendFile(selectedFilePath, fileName);
             } else {
                 mainToast.showText("Ошибка: Не удалось получить путь к файлу");
             }
@@ -122,7 +121,31 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void sendFile(String filePath) {
+    private String getFileName(Uri uri) {
+        String fileName = null;
+        if (uri.getScheme().equals("content")) {
+            Cursor cursor = getContentResolver().query(uri, null, null, null, null);
+            try {
+                if (cursor != null && cursor.moveToFirst()) {
+                    fileName = cursor.getString(cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME));
+                }
+            } finally {
+                if (cursor != null) {
+                    cursor.close();
+                }
+            }
+        }
+        if (fileName == null) {
+            fileName = uri.getPath();
+            int cut = fileName.lastIndexOf('/');
+            if (cut != -1) {
+                fileName = fileName.substring(cut + 1);
+            }
+        }
+        return fileName;
+    }
+
+    private void sendFile(String filePath, String fileName) {
         updateStatusTextView("Отправка файла...");
         new Thread(new Runnable() {
             @Override
@@ -130,6 +153,11 @@ public class MainActivity extends AppCompatActivity {
                 try {
                     Socket socket = new Socket(ipInputStr, 12345);
                     OutputStream outputStream = socket.getOutputStream();
+
+                    // Отправка метаданных (название файла)
+                    outputStream.write((fileName + "\n").getBytes());
+
+                    // Отправка данных файла
                     File file = new File(filePath);
                     InputStream fileInputStream = Files.newInputStream(file.toPath());
                     byte[] buffer = new byte[4096];
@@ -137,6 +165,7 @@ public class MainActivity extends AppCompatActivity {
                     while ((bytesRead = fileInputStream.read(buffer)) != -1) {
                         outputStream.write(buffer, 0, bytesRead);
                     }
+
                     outputStream.flush();
                     fileInputStream.close();
                     socket.close();
